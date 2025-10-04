@@ -46,7 +46,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $email = trim((string)($_POST['email'] ?? ''));
     $telephone = trim((string)($_POST['telephone'] ?? ''));
-    $signatureData = (string)($_POST['signature'] ?? '');
+    $sigMode = (string)($_POST['sig_mode'] ?? 'draw');
+    $signatureData = (string)($_POST['signature'] ?? ''); // data URL from canvas (draw)
+    $signatureText = trim((string)($_POST['signature_text'] ?? '')); // typed signature
 
     // Required fields
     if ($bookingName === '') {
@@ -65,21 +67,75 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $errors[] = 'You must agree to the terms & conditions.';
     }
 
-    // Basic signature validation: ensure non-empty data URL and decodes to bytes
+    // Signature validation/processing by mode
     $signatureFile = '';
     $sigBytes = '';
     $signatureDataUrl = '';
-    if ($signatureData !== '') {
-        // Preserve the original data URL for embedding into PDF
-        $signatureDataUrl = $signatureData;
-        $sigData = preg_replace('#^data:image/\w+;base64,#i', '', $signatureData);
-        $sigData = str_replace(' ', '+', $sigData);
-        $sigBytes = base64_decode($sigData, true);
-        if ($sigBytes === false || strlen($sigBytes) < 100) { // 100 bytes ~ minimal content
-            $errors[] = 'Signature appears to be empty or invalid.';
+    $signatureTypedHtml = '';
+
+    if ($sigMode === 'draw') {
+        if ($signatureData !== '') {
+            $signatureDataUrl = $signatureData; // keep as-is for embedding
+            $sigData = preg_replace('#^data:image/\w+;base64,#i', '', $signatureData);
+            $sigData = str_replace(' ', '+', $sigData);
+            $sigBytes = base64_decode($sigData, true);
+            if ($sigBytes === false || strlen($sigBytes) < 100) { // 100 bytes ~ minimal content
+                $errors[] = 'Signature appears to be empty or invalid.';
+            }
+        } else {
+            $errors[] = 'Signature is required (draw mode).';
+        }
+    } elseif ($sigMode === 'type') {
+        if ($signatureText === '') {
+            $errors[] = 'Typed signature is required.';
+        } else {
+            // Prepare styled HTML to render typed signature in PDF
+            $safeText = htmlspecialchars($signatureText, ENT_QUOTES, 'UTF-8');
+            $signatureTypedHtml = '<div style="display:inline-block; padding:6px 10px; font-size:20px; font-style:italic;">
+                ' . $safeText . '
+            </div>';
+        }
+    } elseif ($sigMode === 'upload') {
+        if (!isset($_FILES['signature_file']) || !is_array($_FILES['signature_file'])) {
+            $errors[] = 'Signature image is required.';
+        } else {
+            $file = $_FILES['signature_file'];
+            if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                $errors[] = 'Error uploading signature image.';
+            } else {
+                $size = (int)($file['size'] ?? 0);
+                if ($size <= 0 || $size > 3 * 1024 * 1024) {
+                    $errors[] = 'Signature image must be JPG/PNG up to 3MB.';
+                } else {
+                    // Determine MIME with fileinfo if available, otherwise fallback to getimagesize
+                    $mime = '';
+                    if (class_exists('finfo')) {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $mime = $finfo->file($file['tmp_name']);
+                    }
+                    if ($mime === '' || $mime === false) {
+                        $imgInfo = @getimagesize($file['tmp_name']);
+                        if (is_array($imgInfo) && isset($imgInfo['mime'])) {
+                            $mime = $imgInfo['mime'];
+                        }
+                    }
+                    if (!in_array($mime, ['image/jpeg', 'image/png'], true)) {
+                        $errors[] = 'Only JPG or PNG signature images are allowed.';
+                    } else {
+                        $data = file_get_contents($file['tmp_name']);
+                        if ($data === false) {
+                            $errors[] = 'Failed to read uploaded signature image.';
+                        } else {
+                            $b64 = base64_encode($data);
+                            $signatureDataUrl = 'data:' . $mime . ';base64,' . $b64;
+                        }
+                    }
+                }
+            }
         }
     } else {
-        $errors[] = 'Signature is required.';
+        // Unknown mode, treat as error
+        $errors[] = 'Invalid signature mode.';
     }
 
     if (!empty($errors)) {
@@ -136,7 +192,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             
             <div class="signature">
                 <span class="label">Signature:</span><br>';
-    if ($signatureDataUrl) {
+    if ($sigMode === 'type' && $signatureTypedHtml !== '') {
+        $pdfHtml .= $signatureTypedHtml;
+    } elseif ($signatureDataUrl) {
         $pdfHtml .= '<img src="' . $signatureDataUrl . '" style="max-width:300px; height:auto;" />';
     }
     $pdfHtml .= '</div>
@@ -166,7 +224,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $smtpSecure = $_ENV['SMTP_SECURE'] ?? 'tls';
         $smtpFrom = $_ENV['SMTP_FROM'] ?? '';
         $smtpFromName = $_ENV['SMTP_FROM_NAME'] ?? 'Maalum Pool Booking';
-        $smtpTo = $_ENV['SMTP_TO'] ?? 'flavianmichael663@gmail.com';
+        $smtpTo = $_ENV['SMTP_TO'] ?? 'info@mileletechnologies.com';
 
         if ($smtpHost !== '') {
             // Use SMTP when provided for reliable delivery

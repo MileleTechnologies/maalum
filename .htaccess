@@ -1,0 +1,22 @@
+# Ensure index.php is the default index
+DirectoryIndex index.php
+
+# Security: prevent directory listing
+Options -Indexes
+
+# Recommended: follow symlinks (commonly enabled on Apache hosts)
+<IfModule mod_negotiation.c>
+    Options -MultiViews
+</IfModule>
+
+# If you later add pretty URLs, you can enable this Rewrite section
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteBase /
+#     # Skip existing files/directories
+#     RewriteCond %{REQUEST_FILENAME} -f [OR]
+#     RewriteCond %{REQUEST_FILENAME} -d
+#     RewriteRule ^ - [L]
+#     # Otherwise route to index.php
+#     RewriteRule ^ index.php [L]
+# </IfModule>

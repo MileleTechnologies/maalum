@@ -88,7 +88,7 @@ $csrf = $_SESSION['csrf_token'];
             </div>
 
             <div class="form-section">
-                <form id="waiverForm" action="send.php" method="post" autocomplete="off">
+                <form id="waiverForm" action="send.php" method="post" autocomplete="off" enctype="multipart/form-data">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8'); ?>">
                     
                     <div class="checkbox-container">
@@ -140,14 +140,49 @@ $csrf = $_SESSION['csrf_token'];
                             Please provide a signature before submitting.
                         </p>
 
-                        <canvas id="signature-pad"></canvas>
-                        
-                        <div class="btns">
-                            <button type="button" class="btn red waves-effect waves-light" onclick="clearPad()">
-                                <i class="material-icons left">clear</i>Clear
-                            </button>
+                        <!-- Signature mode selector -->
+                        <div style="margin: 10px 0; text-align:center;">
+                            <label style="margin-right: 12px;">
+                                <input name="sig_mode" type="radio" value="draw" id="sigModeDraw" checked>
+                                <span>Draw</span>
+                            </label>
+                            <label style="margin-right: 12px;">
+                                <input name="sig_mode" type="radio" value="type" id="sigModeType">
+                                <span>Type</span>
+                            </label>
+                            <label>
+                                <input name="sig_mode" type="radio" value="upload" id="sigModeUpload">
+                                <span>Upload</span>
+                            </label>
                         </div>
-                        <input type="hidden" name="signature" id="signature">
+
+                        <!-- Draw section -->
+                        <div id="sig-draw-section">
+                            <canvas id="signature-pad"></canvas>
+                            <div class="btns">
+                                <button type="button" class="btn red waves-effect waves-light" onclick="clearPad()">
+                                    <i class="material-icons left">clear</i>Clear
+                                </button>
+                            </div>
+                            <input type="hidden" name="signature" id="signature">
+                        </div>
+
+                        <!-- Type section -->
+                        <div id="sig-type-section" style="display:none;">
+                            <div class="input-field" style="margin-top:20px;">
+                                <i class="material-icons prefix">edit</i>
+                                <input id="signature_text" name="signature_text" type="text" placeholder="Type your full name as signature">
+                                <label for="signature_text">Typed Signature</label>
+                            </div>
+                            <p id="signature-text-error" class="error-message">Please type your signature.</p>
+                        </div>
+
+                        <!-- Upload section -->
+                        <div id="sig-upload-section" style="display:none; text-align:center;">
+                            <input id="signature_file" name="signature_file" type="file" accept="image/*" style="margin-top:10px;">
+                            <p style="font-size: 12px; color:#666;">Accepted: JPG, PNG. Max 3MB.</p>
+                            <p id="signature-file-error" class="error-message">Please upload a signature image (JPG/PNG).</p>
+                        </div>
                     </div>
 
                     <div class="spinner-container" id="loadingSpinner">
@@ -172,17 +207,49 @@ $csrf = $_SESSION['csrf_token'];
         let canvas = document.getElementById('signature-pad');
         let ctx = canvas.getContext('2d');
         let drawing = false;
+        const sigModeDrawEl = document.getElementById('sigModeDraw');
+        const sigModeTypeEl = document.getElementById('sigModeType');
+        const sigModeUploadEl = document.getElementById('sigModeUpload');
+        const sigDrawSection = document.getElementById('sig-draw-section');
+        const sigTypeSection = document.getElementById('sig-type-section');
+        const sigUploadSection = document.getElementById('sig-upload-section');
+        const signatureTextInput = document.getElementById('signature_text');
+        const signatureFileInput = document.getElementById('signature_file');
 
         // Adjust canvas resolution for crisp drawing
+        function fillCanvasWhite() {
+            // Paint a white background so exported image is not transparent (prevents black background in JPEG/PDF)
+            const prev = ctx.getTransform();
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+            // Restore transform
+            ctx.setTransform(prev);
+        }
+
         function resizeCanvas() {
             let ratio = window.devicePixelRatio || 1;
             canvas.width = canvas.offsetWidth * ratio;
             canvas.height = canvas.offsetHeight * ratio;
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.scale(ratio, ratio);
+            fillCanvasWhite();
         }
         resizeCanvas();
         window.addEventListener("resize", resizeCanvas);
+
+        function updateSigModeUI() {
+            const mode = document.querySelector('input[name="sig_mode"]:checked').value;
+            sigDrawSection.style.display = (mode === 'draw') ? '' : 'none';
+            sigTypeSection.style.display = (mode === 'type') ? '' : 'none';
+            sigUploadSection.style.display = (mode === 'upload') ? '' : 'none';
+        }
+        [sigModeDrawEl, sigModeTypeEl, sigModeUploadEl].forEach(el => {
+            el.addEventListener('change', updateSigModeUI);
+        });
+        updateSigModeUI();
 
         function startDraw(x, y) {
             drawing = true;
@@ -192,8 +259,9 @@ $csrf = $_SESSION['csrf_token'];
 
         function drawLine(x, y) {
             if (!drawing) return;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.lineCap = "round";
+            ctx.lineJoin = "round";
             ctx.strokeStyle = "black";
             ctx.lineTo(x, y);
             ctx.stroke();
@@ -228,13 +296,18 @@ $csrf = $_SESSION['csrf_token'];
 
         function clearPad() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            fillCanvasWhite();
         }
 
         function isCanvasBlank(canvas) {
             const blank = document.createElement('canvas');
             blank.width = canvas.width;
             blank.height = canvas.height;
-            return canvas.toDataURL() === blank.toDataURL();
+            const bctx = blank.getContext('2d');
+            // Fill white to match our canvas background
+            bctx.fillStyle = '#ffffff';
+            bctx.fillRect(0, 0, blank.width, blank.height);
+            return canvas.toDataURL('image/png') === blank.toDataURL('image/png');
         }
 
         function showSuccessModal() {
@@ -259,11 +332,24 @@ $csrf = $_SESSION['csrf_token'];
             let telephone = document.getElementById("telephone").value.trim();
             let contactError = document.getElementById("contact-error");
             let signatureError = document.getElementById("signature-error");
+            let signatureTextError = document.getElementById("signature-text-error");
+            let signatureFileError = document.getElementById("signature-file-error");
             let hasError = false;
 
-            // Save signature data
-            let dataURL = canvas.toDataURL('image/jpeg', 0.9);
-            document.getElementById("signature").value = dataURL;
+            // Reset specific error messages
+            if (signatureTextError) signatureTextError.style.display = "none";
+            if (signatureFileError) signatureFileError.style.display = "none";
+
+            const mode = document.querySelector('input[name="sig_mode"]:checked').value;
+            // Prepare signature based on mode
+            if (mode === 'draw') {
+                // Export as PNG to preserve visibility and avoid transparency -> black background
+                let dataURL = canvas.toDataURL('image/png');
+                document.getElementById("signature").value = dataURL;
+            } else {
+                // Clear hidden data URL when not drawing
+                document.getElementById("signature").value = '';
+            }
 
             // Validation
             if (email === "" && telephone === "") {
@@ -273,11 +359,35 @@ $csrf = $_SESSION['csrf_token'];
                 contactError.style.display = "none";
             }
 
-            if (isCanvasBlank(canvas)) {
-                signatureError.style.display = "block";
-                hasError = true;
-            } else {
-                signatureError.style.display = "none";
+            // Signature validation by mode
+            if (mode === 'draw') {
+                if (isCanvasBlank(canvas)) {
+                    signatureError.style.display = "block";
+                    hasError = true;
+                } else {
+                    signatureError.style.display = "none";
+                }
+            } else if (mode === 'type') {
+                const txt = (signatureTextInput?.value || '').trim();
+                if (!txt) {
+                    if (signatureTextError) signatureTextError.style.display = "block";
+                    hasError = true;
+                }
+            } else if (mode === 'upload') {
+                const file = signatureFileInput?.files?.[0];
+                if (!file) {
+                    if (signatureFileError) signatureFileError.style.display = "block";
+                    hasError = true;
+                } else {
+                    const allowed = ['image/png','image/jpeg','image/jpg'];
+                    if (!allowed.includes(file.type) || file.size > 3 * 1024 * 1024) {
+                        if (signatureFileError) signatureFileError.textContent = 'Please upload a JPG or PNG image up to 3MB.';
+                        if (signatureFileError) signatureFileError.style.display = "block";
+                        hasError = true;
+                    } else {
+                        if (signatureFileError) signatureFileError.style.display = "none";
+                    }
+                }
             }
 
             if (hasError) {
@@ -290,6 +400,7 @@ $csrf = $_SESSION['csrf_token'];
 
             // Prepare form data
             let formData = new FormData(this);
+            formData.set('sig_mode', mode);
 
             // Submit via AJAX
             fetch('send.php', {
