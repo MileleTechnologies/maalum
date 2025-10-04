@@ -1,0 +1,14 @@
+# Environment
+.env
+
+# Composer
+/vendor/
+composer.lock
+
+# Generated files
+signature_*.png
+booking_*.pdf
+
+# OS/system files
+.DS_Store
+Thumbs.db
