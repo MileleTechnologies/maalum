@@ -5,39 +5,30 @@
 }
 
 body {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f6f7fb;
     min-height: 100vh;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    padding: 20px 0;
+    padding: 24px 0;
 }
 
 .main-container {
     max-width: 900px;
     margin: 0 auto;
-    background: white;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
     overflow: hidden;
 }
 
 .header-section {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    padding: 40px 20px;
+    background: #ffffff;
+    padding: 28px 20px;
     text-align: center;
+    border-bottom: 1px solid #eceff4;
     position: relative;
-    overflow: hidden;
 }
 
-.header-section::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    animation: wave 15s infinite linear;
-}
+.header-section::before { display: none; }
 
 @keyframes wave {
     0% { transform: rotate(0deg); }
@@ -57,7 +48,7 @@ body {
 }
 
 .header-section h3 {
-    color: white;
+    color: #111;
     font-size: 2em;
     font-weight: 700;
     margin-bottom: 10px;
@@ -67,7 +58,7 @@ body {
 }
 
 .header-section h4 {
-    color: rgba(255,255,255,0.95);
+    color: #333;
     font-size: 1.3em;
     font-weight: 500;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
@@ -81,21 +72,21 @@ body {
 
 .terms-intro {
     text-align: center;
-    font-size: 1.1em;
-    color: #555;
-    margin-bottom: 30px;
-    padding: 20px;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    border-radius: 10px;
-    border-left: 4px solid #4facfe;
+    font-size: 1.05em;
+    color: #4a4f57;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border: 1px solid #eceff4;
 }
 
 .terms-list {
-    background: #f8f9fa;
-    padding: 30px;
-    border-radius: 15px;
-    margin-bottom: 30px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid #eceff4;
 }
 
 .terms-list ul {
@@ -104,14 +95,12 @@ body {
 }
 
 .terms-list li {
-    padding: 15px;
-    margin-bottom: 12px;
-    background: white;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: #fcfdff;
     border-radius: 8px;
-    border-left: 4px solid #4facfe;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: transform 0.2s, box-shadow 0.2s;
-    color: #333;
+    border: 1px solid #e9edf3;
+    color: #2f343b;
     line-height: 1.6;
 }
 
@@ -121,13 +110,12 @@ body {
 }
 
 .notice-box {
-    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
-    padding: 20px;
-    border-radius: 10px;
+    background: #fffef4;
+    padding: 16px;
+    border-radius: 8px;
     text-align: center;
-    margin-bottom: 30px;
-    border: 2px solid #fdcb6e;
-    box-shadow: 0 4px 6px rgba(253, 203, 110, 0.3);
+    margin-bottom: 24px;
+    border: 1px solid #f3eac2;
 }
 
 .notice-box p {
@@ -138,31 +126,83 @@ body {
 }
 
 .form-section {
-    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-    padding: 40px;
-    border-radius: 15px;
-    margin-top: 30px;
+    background: #ffffff;
+    padding: 28px;
+    border-radius: 12px;
+    margin-top: 24px;
+    border: 1px solid #eceff4;
 }
 
 .checkbox-container {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-    border: 2px solid #4facfe;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    margin-bottom: 28px; /* space before the booking row */
+    border: 0;
 }
 
 .checkbox-container label {
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* align checkbox with multiline text */
+    gap: 12px;
+    line-height: 1.25; /* tighter vertical spacing in consent text */
+    width: 100%; /* ensure label spans the container width */
     cursor: pointer;
+}
+
+.checkbox-container span {
+    display: block;
+    flex: 1 1 auto; /* allow text to take remaining width */
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .checkbox-container span {
     font-size: 1.05em;
     color: #2d3436;
     font-weight: 500;
+}
+
+/* Mobile-safe rules to avoid overlap of checkbox and following fields */
+.checkbox-container {
+    margin-bottom: 24px !important; /* extra space before next row */
+}
+.checkbox-container label {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap; /* allow text to wrap to next line */
+}
+.checkbox-container input[type="checkbox"] {
+    margin-right: 10px;
+    margin-top: 4px;
+    flex: 0 0 auto;
+}
+.checkbox-container .black-text {
+    display: block;
+    flex: 1 1 100%;
+    min-width: 0;
+    white-space: normal;  /* allow wrapping */
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+@media (max-width: 480px) {
+    /* Stack checkbox above text on very small screens for maximum safety */
+    .checkbox-container label {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+    .checkbox-container input[type="checkbox"] {
+        margin: 0 0 4px 0; /* space below checkbox when stacked */
+    }
+    .checkbox-container .black-text {
+        width: 100%;
+    }
+    .form-section .row {
+        margin-bottom: 16px; /* more vertical space between rows on small screens */
+    }
 }
 
 .input-field {
@@ -460,6 +500,23 @@ body {
     100% { transform: rotate(360deg); }
 }
 
+.checkbox-row::after {
+    content: "";
+    display: block;
+    clear: both; /* ensure nothing overlaps the next row */
+}
+
+/* Guard against Materialize prefix icon overlapping when focused on small screens */
+.row.checkbox-row + .row .input-field .prefix {
+    z-index: 1;
+    position: relative;
+}
+
+/* Ensure the first input row after the checkbox has its own breathing room */
+.row.first-input { clear: both; }
+.row.first-input .input-field { margin-top: 0; }
+.row.first-input { margin-top: 12px; }
+
 @media (max-width: 768px) {
     .content-section {
         padding: 20px;
@@ -479,5 +536,38 @@ body {
 
     .success-modal, .error-modal {
         padding: 30px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px 0;
+    }
+    .header-section h3 { font-size: 1.4em; }
+    .header-section h4 { font-size: 1.05em; }
+    .logo-container img, .header-section img { max-width: 160px; }
+    #signature-pad { height: 180px; }
+    .checkbox-container span { font-size: 0.88em; line-height: 1.06; }
+    .checkbox-container label { gap: 14px; }
+    .checkbox-row { margin-bottom: 28px !important; }
+    .checkbox-container { padding-bottom: 6px; }
+    .checkbox-row + .row { margin-top: 18px; }
+    .checkbox-row + .row .input-field { clear: both; margin-top: 8px; }
+    .row.first-input { margin-top: 20px !important; }
+    /* Keep the label from floating too high on tiny screens to prevent overlap */
+    .row.first-input .input-field label { transition: transform 0.2s ease; }
+    .row.first-input .input-field label.active { transform: translateY(-8px) scale(0.95) !important; }
+    .row.first-input .input-field { padding-top: 2px; }
+    .btn-submit { height: 48px !important; line-height: 48px !important; }
+    .error-message { font-size: 0.95em; }
+}
+
+@media (max-width: 992px) {
+    .content-section {
+        padding: 20px;
+    }
+
+    .form-section {
+        padding: 20px;
     }
 }

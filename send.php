@@ -50,6 +50,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $signatureData = (string)($_POST['signature'] ?? ''); // data URL from canvas (draw)
     $signatureText = trim((string)($_POST['signature_text'] ?? '')); // typed signature
 
+    // New fields: booking date and children info
+    $bookingDate = trim((string)($_POST['booking_date'] ?? ''));
+    $hasChildren = isset($_POST['has_children']);
+    $childrenCount = isset($_POST['children_count']) ? (int)$_POST['children_count'] : 0;
+    $childrenAges = [];
+    $childrenRespAck = isset($_POST['children_responsibility']);
+
     // Required fields
     if ($bookingName === '') {
         $errors[] = 'Booking name is required.';
@@ -65,6 +72,50 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
     if (!isset($_POST['agree_terms'])) {
         $errors[] = 'You must agree to the terms & conditions.';
+    }
+
+    // Validate booking date: must be provided and not in the past (relative to APP_TZ)
+    if ($bookingDate === '') {
+        $errors[] = 'Booking date is required.';
+    } else {
+        $appTz = $_ENV['APP_TZ'] ?? 'UTC';
+        try {
+            $today = new DateTime('now', new DateTimeZone($appTz));
+        } catch (Throwable $t) {
+            $today = new DateTime('now', new DateTimeZone('UTC'));
+        }
+        $todayStr = $today->format('Y-m-d');
+        // Basic format check YYYY-MM-DD and compare lexicographically (safe for ISO date format)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $bookingDate)) {
+            $errors[] = 'Invalid booking date format.';
+        } elseif ($bookingDate < $todayStr) {
+            $errors[] = 'Booking date cannot be in the past.';
+        }
+    }
+
+    // Validate children section if present
+    if ($hasChildren) {
+        if ($childrenCount <= 0) {
+            $errors[] = 'Please specify the number of children.';
+        } else {
+            for ($i = 1; $i <= $childrenCount; $i++) {
+                $key = 'child_age_' . $i;
+                $val = isset($_POST[$key]) ? trim((string)$_POST[$key]) : '';
+                if ($val === '' || !ctype_digit($val)) {
+                    $errors[] = "Please provide a valid age for child #$i.";
+                    continue;
+                }
+                $age = (int)$val;
+                if ($age < 0 || $age > 17) {
+                    $errors[] = "Child #$i age must be between 0 and 17.";
+                } else {
+                    $childrenAges[] = $age;
+                }
+            }
+        }
+        if (!$childrenRespAck) {
+            $errors[] = 'Please acknowledge responsibility for the listed children.';
+        }
     }
 
     // Signature validation/processing by mode
@@ -91,7 +142,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         } else {
             // Prepare styled HTML to render typed signature in PDF
             $safeText = htmlspecialchars($signatureText, ENT_QUOTES, 'UTF-8');
-            $signatureTypedHtml = '<div style="display:inline-block; padding:6px 10px; font-size:20px; font-style:italic;">
+            $signatureTypedHtml = '<div style="display:inline-block; padding:4px 8px; font-size:16px; font-style:italic;">
                 ' . $safeText . '
             </div>';
         }
@@ -146,24 +197,39 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     // No need to persist signature to disk; we'll embed via data URI in the PDF
 
+    // Prepare date/time (use APP_TZ from .env if available)
+    $appTz = $_ENV['APP_TZ'] ?? 'UTC';
+    try {
+        $dt = new DateTime('now', new DateTimeZone($appTz));
+    } catch (Throwable $t) {
+        $dt = new DateTime('now', new DateTimeZone('UTC'));
+    }
+    $dtFormatted = $dt->format('Y-m-d H:i:s T');
+
     // Build PDF HTML
     $pdfHtml = '
     <html>
     <head>
         <style>
-            body { font-family: DejaVu Sans, sans-serif; }
-            .container { background-color: #fcfcfc; padding: 20px; }
-            h2,h3,h4 { text-align: center; text-decoration: underline; }
-            ul { margin-left: 40px; }
-            .field { margin: 10px 0; font-size: 14px; }
+            body { font-family: DejaVu Sans, sans-serif; font-size: 12px; line-height: 1.35; }
+            .container { background-color: #fcfcfc; padding: 12px; }
+            h2,h3,h4 { text-align: center; text-decoration: underline; margin: 6px 0; }
+            h3 { font-size: 16px; }
+            h4 { font-size: 14px; }
+            p { margin: 6px 0; }
+            ul { margin: 6px 0 6px 28px; }
+            li { margin: 2px 0; }
+            .field { margin: 6px 0; font-size: 12px; }
             .label { font-weight: bold; }
-            .signature { margin-top: 20px; text-align: center; }
+            .signature { margin-top: 8px; text-align: center; page-break-inside: avoid; }
+            .meta { text-align: right; margin: 6px 0; }
         </style>
     </head>
     <body>
         <div class="container">
             <h3>Maalum Natural Swimming Pool</h3>
             <h4>Terms & Conditions</h4>
+            <div class="meta"><span class="label">Submitted At:</span> ' . htmlspecialchars($dtFormatted) . '</div>
             <p>In consideration for being allowed to access the Maalum Natural Swimming Pool and its facilities,
             the sufficiency of which is hereby acknowledged:</p>
 
@@ -189,13 +255,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             <div class="field"><span class="label">Supervisor Name(s):</span> ' . htmlspecialchars($supervisorDisplay) . '</div>
             <div class="field"><span class="label">Email:</span> ' . htmlspecialchars($email) . '</div>
             <div class="field"><span class="label">Telephone:</span> ' . htmlspecialchars($telephone) . '</div>
-            
+            <div class="field"><span class="label">Arrival Date:</span> ' . htmlspecialchars($bookingDate) . '</div>
+            <div class="field"><span class="label">Children in group:</span> ' . ($hasChildren ? 'Yes' : 'No') . '</div>';
+
+    if ($hasChildren) {
+        $pdfHtml .= '
+            <div class="field"><span class="label">Number of children:</span> ' . (int)$childrenCount . '</div>
+            <div class="field"><span class="label">Children ages:</span> ' . htmlspecialchars(implode(', ', array_map('strval', $childrenAges))) . '</div>
+            <div class="field"><span class="label">Responsibility acknowledged:</span> ' . ($childrenRespAck ? 'Yes' : 'No') . '</div>';
+    }
+
+    $pdfHtml .= '
             <div class="signature">
                 <span class="label">Signature:</span><br>';
     if ($sigMode === 'type' && $signatureTypedHtml !== '') {
         $pdfHtml .= $signatureTypedHtml;
     } elseif ($signatureDataUrl) {
-        $pdfHtml .= '<img src="' . $signatureDataUrl . '" style="max-width:300px; height:auto;" />';
+        $pdfHtml .= '<img src="' . $signatureDataUrl . '" style="max-width:240px; height:auto;" />';
     }
     $pdfHtml .= '</div>
         </div>
@@ -209,7 +285,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
-    $pdfFile = 'booking_' . time() . '.pdf';
+    // Create a more descriptive filename with booking name and timestamp
+    $safeBookingForFile = preg_replace('/[^A-Za-z0-9_-]+/', '_', $bookingName);
+    $pdfFile = 'booking_' . ($safeBookingForFile !== '' ? $safeBookingForFile . '_' : '') . $dt->format('Ymd_His') . '.pdf';
     file_put_contents($pdfFile, $dompdf->output());
 
     // Send email with ONLY the PDF
@@ -223,7 +301,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $smtpPort = (int)($_ENV['SMTP_PORT'] ?? 587);
         $smtpSecure = $_ENV['SMTP_SECURE'] ?? 'tls';
         $smtpFrom = $_ENV['SMTP_FROM'] ?? '';
-        $smtpFromName = $_ENV['SMTP_FROM_NAME'] ?? 'Maalum Pool Booking';
+        $smtpFromName = $_ENV['SMTP_FROM_NAME'] ?? 'Maalum ';
         $smtpTo = $_ENV['SMTP_TO'] ?? 'info@mileletechnologies.com';
 
         if ($smtpHost !== '') {
@@ -252,8 +330,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $mail->addAttachment($pdfFile);
 
         $mail->isHTML(true);
-        $mail->Subject = 'New Booking Submitted';
-        $mail->Body = 'A new booking has been submitted. Please see the attached PDF.';
+        $mail->Subject = 'New Booking Submitted - ' . $bookingName . ' - ' . $dtFormatted;
+        $mail->Body = nl2br(
+            "A new booking has been submitted. Please see the attached PDF.\n\n" .
+            "Booking Name: " . $bookingName . "\n" .
+            "Supervisor Name(s): " . $supervisorDisplay . "\n" .
+            "Email: " . $email . "\n" .
+            "Telephone: " . $telephone . "\n" .
+            "Arrival Date: " . $bookingDate . "\n" .
+            ( $hasChildren ? (
+                "Children in group: Yes\n" .
+                "Number of children: " . (int)$childrenCount . "\n" .
+                "Children ages: " . implode(', ', array_map('strval', $childrenAges)) . "\n" .
+                "Responsibility acknowledged: " . ($childrenRespAck ? 'Yes' : 'No') . "\n"
+            ) : "Children in group: No\n" ) .
+            "Submitted At: " . $dtFormatted . "\n"
+        );
 
         $mail->send();
 
