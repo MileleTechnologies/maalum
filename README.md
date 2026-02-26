@@ -1,38 +1,248 @@
-# Project Documentation for Maalum
 
-## Project Overview
-Maalum is an innovative digital platform designed to streamline information sharing and enhance collaboration among users. The main goal of the project is to create a user-friendly interface that allows users to easily access, share, and manage information effectively.
+Markdown
+# Maalum Natural Swimming Pool - Waiver & Booking Form
 
-## Features
-- **User Authentication**: Secure login and registration system.
-- **Dashboard**: An intuitive dashboard for easy navigation.
-- **Information Sharing**: Easily share and access documents and resources.
-- **Collaboration Tools**: Integrated chat and commenting features for real-time collaboration.
-- **Responsive Design**: Mobile-friendly layout that adapts to all devices.
+A modern, responsive web application for managing waiver forms and bookings at the Maalum Natural Swimming Pool in Zanzibar. The system provides a multi-language interface, digital signature capture, and automated PDF generation with email notification.
 
-## Installation
-To install Maalum on your local machine, follow these steps:
-1. Clone the repository:  
-   `git clone https://github.com/MileleTechnologies/maalum.git`
-2. Navigate to the project directory:  
-   `cd maalum`
-3. Install the required dependencies:  
-   `npm install`
+## 🌍 Overview
 
-## Usage
-To start the application, run the following command in the project directory:
-```
-npm start
-```
-Open your web browser and navigate to `http://localhost:3000` to use the application.
+Maalum is a comprehensive booking and waiver management system designed for natural swimming pools. It features:
 
-## Technology Stack
-- **Frontend**: React.js
-- **Backend**: Node.js, Express
-- **Database**: MongoDB
-- **Authentication**: JSON Web Tokens (JWT)
-- **Styling**: CSS, Bootstrap
-- **Version Control**: Git
+- **Interactive HTML5 Form** with real-time validation
+- **Digital Signature Capture** (draw, type, or upload)
+- **Multi-Language Support** (8 languages: English, Spanish, French, German, Italian, Polish, Czech, Chinese)
+- **PDF Generation & Email Delivery** of waiver documents
+- **Responsive Design** for all devices (mobile, tablet, desktop)
+- **CSRF Protection** for secure form submission
+- **Comprehensive Data Validation** for all inputs
+
+## 📋 Features
+
+### Booking Management
+- Booking reference name
+- Supervisor/guardian information (with add multiple option)
+- Booking date selection (future dates only)
+- Contact information (email & phone)
+
+### Visitor Information
+- Adult participant details (name, age, email, phone)
+- Children information (count and ages 0-17)
+- Responsibility acknowledgment for children
+
+### Signature Options
+Users can sign in three ways:
+1. **Draw** - Freehand signature on HTML5 canvas
+2. **Type** - Text-based signature
+3. **Upload** - Image file (JPG/PNG, max 3MB)
+
+### Multi-Language Support
+Seamless language switching via floating FAB button:
+- 🇺🇸 English
+- 🇪🇸 Español (Spanish)
+- 🇫🇷 Français (French)
+- 🇩🇪 Deutsch (German)
+- 🇮🇹 Italiano (Italian)
+- 🇵🇱 Polski (Polish)
+- 🇨🇿 Čeština (Czech)
+- 🇨🇳 中文 (Chinese)
+
+### Automated Workflows
+- Validates all form data before submission
+- Generates PDF with terms & conditions
+- Sends confirmation email with PDF attachment
+- Displays success/error modals
+
+## 🚀 Quick Start
+
+### Prerequisites
+- PHP 7.4 or higher
+- Web server with PHP support (Apache/Nginx)
+- SMTP credentials (Gmail or other provider)
+
+### Installation
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/MileleTechnologies/maalum.git
+   cd maalum
+Install Dependencies
+
+bash
+composer install
+Configure Environment
+
+bash
+cp .env.example .env
+Update .env with Your Settings
+
+env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+RECIPIENT_EMAIL=info@maalumzanzibar.com
+Deploy to Web Server
+
+Upload files to your web hosting
+Ensure proper file permissions
+Access via https://yourdomain.com
+📁 Project Structure
+Code
+maalum/
+├── index.php                 # Main form interface
+├── send.php                  # Form processing & email handler
+├── assets/
+│   └── styles.css           # Custom styling & responsive design
+├── js/
+│   └── materialize.min.js   # UI framework
+├── PHPMailer/               # Email library
+├── dompdf/                  # PDF generation library
+├── MAALUM.png              # Logo image
+├── composer.json           # Dependency management
+├── .env.example            # Environment configuration template
+├── .htaccess               # Apache rewrite rules
+├── web.config              # IIS configuration
+└── README.md               # This file
+🔧 Configuration
+Email Setup (Gmail Example)
+Enable 2-Step Verification on Gmail
+Generate an App Password at https://myaccount.google.com/apppasswords
+Use the app password in .env:
+Code
+SMTP_PASSWORD=your-16-char-app-password
+Customize Recipient Email
+Edit send.php:
+
+PHP
+$mail->addAddress('your-email@domain.com'); // Change recipient
+🎨 Customization
+Terms & Conditions
+Edit the 11 rules in index.php (lines with data-translate="rule{n}"):
+
+PHP
+<li data-translate="rule1">Your custom rule here</li>
+Styling
+Modify assets/styles.css for custom colors, fonts, and layout.
+
+Logo
+Replace MAALUM.png with your own logo (recommended: 200px width).
+
+🔒 Security Features
+CSRF Token Protection - Prevents cross-site request forgery
+Input Validation - Server-side validation of all fields
+Email Validation - Format checking for email addresses
+File Upload Validation - Type and size restrictions for signatures
+Date Validation - Prevents past booking dates
+SQL Injection Prevention - Uses parameterized queries (when applicable)
+XSS Protection - HTML entity encoding of user inputs
+📊 Form Fields
+Field	Type	Required	Validation
+Booking Name	Text	Yes	Non-empty
+Supervisor Name(s)	Text	Yes	At least 1 required
+Email	Email	Conditional	Valid format OR phone required
+Phone	Tel	Conditional	Valid format OR email required
+Booking Date	Date	Yes	Today or future
+Children	Checkbox	No	-
+Children Count	Select	Conditional	1-10 if children selected
+Child Ages	Number	Conditional	0-17 each
+Adults	Array	No	Name, age (12-120), email, phone
+Signature	Mixed	Yes	Draw/Type/Upload option
+Terms Agreement	Checkbox	Yes	Must check
+📧 Email Output
+The system sends an email containing:
+
+All submitted booking information
+Children details and adult information
+Submission timestamp
+Attached PDF waiver document
+📱 Responsive Breakpoints
+Mobile (≤480px) - Single column, stacked layout
+Tablet (481px-768px) - Two-column where possible
+Desktop (≥769px) - Full responsive grid
+🐛 Troubleshooting
+Email Not Sending
+Check SMTP credentials in .env
+Verify firewall isn't blocking SMTP port (465)
+Check Gmail App Passwords if using Gmail
+Enable "Less secure apps" (if not using App Passwords)
+PDF Not Generating
+Ensure dompdf folder exists and is readable
+Check PHP temp directory permissions
+Verify DOMPDF dependencies are installed
+Form Not Validating
+Check browser console for JavaScript errors
+Verify Materialize JS library is loaded
+Check that form field IDs match JavaScript references
+Images Not Displaying
+Ensure MAALUM.png is in the root directory
+Check file permissions (should be 644)
+Verify correct file path in HTML
+🌐 Browser Support
+Chrome 90+
+Firefox 88+
+Safari 14+
+Edge 90+
+Mobile browsers (iOS Safari, Chrome Mobile)
+📝 License
+[Add your license information here]
+
+👥 Support
+For issues or questions, contact:
+
+Email: support@mileletechnologies.com
+Website: https://www.mileletechnologies.com
+🔄 Version History
+v1.0.0 (Current)
+Initial release
+8-language support
+Digital signature capture (3 modes)
+PDF generation & email delivery
+CSRF protection
+Mobile-responsive design
+📚 Dependencies
+Materialize CSS - Frontend framework
+PHPMailer - Email sending
+DOMPDF - PDF generation
+Signature Pad - Canvas signature
+🚢 Deployment
+Apache (.htaccess included)
+Code
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Your rewrite rules
+</IfModule>
+IIS (web.config included)
+Configuration for URL rewriting on Windows servers.
+
+Docker (Optional)
+Dockerfile
+FROM php:8.1-apache
+RUN docker-php-ext-install pdo pdo_mysql
+COPY . /var/www/html
+✨ Best Practices
+Always use HTTPS in production
+Regularly backup the server and database
+Monitor email delivery for failures
+Update dependencies periodically
+Test thoroughly on multiple devices
+Keep .env secure and never commit to version control
+Enable error logging for debugging
+Developed by: Milele Technologies
+Last Updated: February 26, 2026
+Repository: https://github.com/MileleTechnologies/maalum
+
+Code
 
 ---
-For more information and updates, please visit the [project repository](https://github.com/MileleTechnologies/maalum).
+
+This README provides:
+- ✅ Clear project overview and features
+- ✅ Quick start guide with prerequisites
+- ✅ Project structure visualization
+- ✅ Configuration instructions with examples
+- ✅ Security features documentation
+- ✅ Troubleshooting guide
+- ✅ Browser compatibility info
+- ✅ Deployment guidelines
+- ✅ Complete field documentation
+- ✅ Version history and support information
