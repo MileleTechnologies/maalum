@@ -216,10 +216,32 @@ $csrf = $_SESSION['csrf_token'];
                             <label for="bookname" data-translate="booking_reference">Booking Reference</label>
                         </div>
 
-                        <div class="input-field col s12 m6">
-                            <i class="material-icons prefix">supervisor_account</i>
-                            <input id="Supervissor-1" name="Supervissor" type="text" class="validate" required>
-                            <label for="Supervissor-1" data-translate="supervisor_name">Supervisor Name</label>
+                        <div class="col s12 m6" id="supervisorsWrapper">
+                            <div id="supervisorsContainer">
+                                <div class="row" data-supervisor-row="1" style="margin-bottom: 0;">
+                                    <div class="input-field col s12">
+                                        <i class="material-icons prefix">supervisor_account</i>
+                                        <input id="supervisor_1" name="Supervissor[]" type="text" class="validate" required>
+                                        <label for="supervisor_1" data-translate="supervisor_name">Supervisor Name</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12 m6" id="adultsWrapper">
+                            <div id="adultsContainer"></div>
+                            <div class="left-align" style="margin-top: 6px;">
+                                <button type="button" id="addAdultBtn" class="btn waves-effect waves-light">
+                                    <i class="material-icons left">add</i>
+                                    Add Adult
+                                </button>
+                            </div>
+                            <p id="adults-error" class="error-message" style="display:none;">Please fill all adult details (name, age 12-120, valid email, phone).</p>
+                        </div>
+                        <div class="col s12 m6" id="personsWrapper">
+                            <div id="personsContainer"></div>
                         </div>
                     </div>
 
@@ -502,6 +524,8 @@ $csrf = $_SESSION['csrf_token'];
         document.addEventListener('DOMContentLoaded', function() {
             setMinBookingDate();
             initChildrenHandlers();
+            initSupervisorHandlers();
+            initAdultHandlers();
         });
 
         // Adjust canvas resolution for crisp drawing
@@ -598,6 +622,137 @@ $csrf = $_SESSION['csrf_token'];
             return canvas.toDataURL('image/png') === blank.toDataURL('image/png');
         }
 
+        // Supervisor dynamic fields
+        function updateSupervisorLabelsLanguage() {
+            // Renumber and update labels text per language
+            const rows = document.querySelectorAll('#supervisorsContainer [data-supervisor-row]');
+            let idx = 1;
+            rows.forEach(row => {
+                row.setAttribute('data-supervisor-row', String(idx));
+                const input = row.querySelector('input');
+                const label = row.querySelector('label');
+                if (input && label) {
+                    const newId = `supervisor_${idx}`;
+                    input.id = newId;
+                    label.setAttribute('for', newId);
+                    label.setAttribute('data-translate', 'supervisor_name');
+                    label.removeAttribute('data-n');
+                    const text = (translations[currentLang] && translations[currentLang]['supervisor_name'])
+                        ? translations[currentLang]['supervisor_name']
+                        : (translations['en']['supervisor_name'] || 'Supervisor Name');
+                    label.innerHTML = text;
+                }
+                idx++;
+            });
+        }
+
+        function addSupervisorField() {
+            const container = document.getElementById('supervisorsContainer');
+            if (!container) return;
+            const count = container.querySelectorAll('[data-supervisor-row]').length;
+            const next = count + 1;
+            const row = document.createElement('div');
+            row.className = 'row';
+            row.setAttribute('data-supervisor-row', String(next));
+            row.style.marginBottom = '0';
+            row.innerHTML = `
+                <div class="input-field col s11">
+                    <i class="material-icons prefix">supervisor_account</i>
+                    <input id="supervisor_${next}" name="Supervissor[]" type="text" class="validate" required>
+                    <label for="supervisor_${next}" data-translate="supervisor_name_n" data-n="${next}">Supervisor ${next} Name</label>
+                </div>
+                <div class="col s1" style="display:flex; align-items:center; justify-content:center; padding-top: 10px;">
+                    <button type="button" class="btn-flat red-text" title="Remove" aria-label="Remove" onclick="removeSupervisorField(this)">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+            updateSupervisorLabelsLanguage();
+        }
+
+        function removeSupervisorField(btn) {
+            const row = btn?.closest('[data-supervisor-row]');
+            const container = document.getElementById('supervisorsContainer');
+            if (!row || !container) return;
+            // Prevent removing the last remaining field
+            const count = container.querySelectorAll('[data-supervisor-row]').length;
+            if (count <= 1) return;
+            container.removeChild(row);
+            updateSupervisorLabelsLanguage();
+        }
+
+        function initSupervisorHandlers() {
+            const addBtn = document.getElementById('addSupervisorBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', addSupervisorField);
+            }
+        }
+
+        // Adults dynamic fields
+        function addAdultField() {
+            const container = document.getElementById('adultsContainer');
+            if (!container) return;
+            const count = container.querySelectorAll('[data-adult-row]').length;
+            const next = count + 1;
+
+            const adultRow = document.createElement('div');
+            adultRow.className = 'row adult-row';
+            adultRow.setAttribute('data-adult-row', next);
+            adultRow.style.marginBottom = '0';
+            adultRow.style.border = '1px solid #ddd';
+            adultRow.style.padding = '10px';
+            adultRow.style.borderRadius = '5px';
+            adultRow.style.position = 'relative';
+
+            adultRow.innerHTML = `
+                <div class="row" style="margin-bottom: 0;">
+                    <div class="input-field col s12 m6">
+                        <i class="material-icons prefix">person</i>
+                        <input id="adult_name_${next}" name="adults[${next}][name]" type="text" class="validate" required>
+                        <label for="adult_name_${next}">Adult ${next} Name</label>
+                    </div>
+                    <div class="input-field col s12 m6">
+                        <i class="material-icons prefix">cake</i>
+                        <input id="adult_age_${next}" name="adults[${next}][age]" type="number" class="validate" min="12" max="120" required>
+                        <label for="adult_age_${next}">Adult ${next} Age</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-field col s12 m6">
+                        <i class="material-icons prefix">email</i>
+                        <input id="adult_email_${next}" name="adults[${next}][email]" type="email" class="validate" required>
+                        <label for="adult_email_${next}">Adult ${next} Email</label>
+                    </div>
+                    <div class="input-field col s12 m6">
+                        <i class="material-icons prefix">phone</i>
+                        <input id="adult_phone_${next}" name="adults[${next}][phone]" type="tel" class="validate" required>
+                        <label for="adult_phone_${next}">Adult ${next} Phone</label>
+                    </div>
+                </div>
+                <button type="button" class="btn-flat waves-effect" onclick="removeAdultField(${next})" style="position: absolute; bottom: 10px; right: 10px;">
+                    <i class="material-icons red-text">delete</i>
+                </button>
+            `;
+
+            container.appendChild(adultRow);
+            M.updateTextFields(); // Re-initialize labels for Materialize
+        }
+
+        function removeAdultField(rowNum) {
+            const row = document.querySelector(`[data-adult-row="${rowNum}"]`);
+            if (row) {
+                row.remove();
+            }
+        }
+
+        function initAdultHandlers() {
+            const addBtn = document.getElementById('addAdultBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', addAdultField);
+            }
+        }
+
         function showSuccessModal() {
             document.getElementById('successModal').classList.add('active');
         }
@@ -623,6 +778,28 @@ $csrf = $_SESSION['csrf_token'];
             let signatureTextError = document.getElementById("signature-text-error");
             let signatureFileError = document.getElementById("signature-file-error");
             let hasError = false;
+
+            // Validate adults
+            const adultRows = document.querySelectorAll('[data-adult-row]');
+            let allAdultsValid = true;
+            const adultsError = document.getElementById('adults-error');
+
+            adultRows.forEach(row => {
+                const name = row.querySelector('input[name*="[name]"]');
+                const age = row.querySelector('input[name*="[age]"]');
+                const email = row.querySelector('input[name*="[email]"]');
+                const phone = row.querySelector('input[name*="[phone]"]');
+                if (!name.value.trim() || !age.value.trim() || age.value < 12 || age.value > 120 || !email.value.trim() || !phone.value.trim()) {
+                    allAdultsValid = false;
+                }
+            });
+
+            if (!allAdultsValid) {
+                if(adultsError) adultsError.style.display = 'block';
+                hasError = true;
+            } else {
+                if(adultsError) adultsError.style.display = 'none';
+            }
 
             // Reset specific error messages
             if (signatureTextError) signatureTextError.style.display = "none";
@@ -793,6 +970,10 @@ $csrf = $_SESSION['csrf_token'];
                 agree_terms: 'By checking this box, I confirm that I have read, understood, and agree to the terms and conditions outlined in this waiver form I agree to abide by the rules.',
                 booking_reference: 'Booking Name',
                 supervisor_name: 'Supervisor Name',
+                supervisor_name_n: 'Supervisor {n} Name',
+                add_supervisor: 'Add Supervisor',
+                person_name_n: 'Person {n} Name',
+                add_person: 'Add Person',
                 email: 'Email',
                 telephone: 'Telephone',
                 contact_error: 'Please provide at least an Email or a Telephone number.',
@@ -842,6 +1023,10 @@ $csrf = $_SESSION['csrf_token'];
                 agree_terms: 'Al marcar esta casilla, confirmo que he leído, entendido y acepto los términos y condiciones descritos en este formulario de exención y me comprometo a cumplir las reglas.',
                 booking_reference: 'Nombre de la reserva',
                 supervisor_name: 'Nombre del Supervisor',
+                supervisor_name_n: 'Supervisor {n} Nombre',
+                add_supervisor: 'Agregar Supervisor',
+                person_name_n: 'Persona {n} Nombre',
+                add_person: 'Agregar Persona',
                 email: 'Correo Electrónico',
                 telephone: 'Teléfono',
                 contact_error: 'Proporcione al menos un correo electrónico o un número de teléfono.',
@@ -890,6 +1075,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: 'Tous les visiteurs de Maalum sont priés de respecter les lieux et de les utiliser conformément à leur destination. Nous vous demandons de signaler immédiatement tout défaut ou tout accident.',
                 booking_reference: 'Nom de la réservation',
                 supervisor_name: 'Nom du superviseur',
+                supervisor_name_n: 'Nom du superviseur {n}',
+                add_supervisor: 'Ajouter un superviseur',
+                person_name_n: 'Nom de la personne {n}',
+                add_person: 'Ajouter une personne',
                 email: 'E-mail',
                 telephone: 'Téléphone',
                 contact_error: 'Veuillez fournir au moins un e-mail ou un numéro de téléphone.',
@@ -940,6 +1129,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: 'Alle Besucher von Maalum werden gebeten, die Einrichtungen respektvoll und bestimmungsgemäß zu behandeln. Bitte melden Sie etwaige Mängel und Unfälle umgehend.',
                 booking_reference: 'Buchungsname',
                 supervisor_name: 'Name des Aufsehers',
+                supervisor_name_n: 'Name des Aufsehers {n}',
+                add_supervisor: 'Aufseher hinzufügen',
+                person_name_n: 'Person {n} Name',
+                add_person: 'Person hinzufügen',
                 email: 'E-Mail',
                 telephone: 'Telefon',
                 contact_error: 'Bitte geben Sie mindestens eine E-Mail oder Telefonnummer an.',
@@ -989,6 +1182,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: 'Si chiede a tutti i visitatori di Maalum di trattare le strutture con rispetto e secondo la loro destinazione d\'uso. Si prega di segnalare immediatamente eventuali difetti o incidenti.',
                 booking_reference: 'Nome della prenotazione',
                 supervisor_name: 'Nome del supervisore',
+                supervisor_name_n: 'Nome del supervisore {n}',
+                add_supervisor: 'Aggiungi supervisore',
+                person_name_n: 'Nome della persona {n}',
+                add_person: 'Aggiungi persona',
                 email: 'Email',
                 telephone: 'Telefono',
                 contact_error: 'Fornisci almeno un indirizzo e-mail o un numero di telefono.',
@@ -1038,6 +1235,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: 'Prosimy wszystkich odwiedzających Maalum o traktowanie obiektu z szacunkiem i zgodnie z jego przeznaczeniem. Prosimy o niezwłoczne zgłaszanie wszelkich zauważonych usterek i wypadków.',
                 booking_reference: 'Nazwa rezerwacji',
                 supervisor_name: 'Imię i nazwisko opiekuna',
+                supervisor_name_n: 'Opiekun {n} — imię i nazwisko',
+                add_supervisor: 'Dodaj opiekuna',
+                person_name_n: 'Osoba {n} — imię i nazwisko',
+                add_person: 'Dodaj osobę',
                 email: 'E-mail',
                 telephone: 'Telefon',
                 contact_error: 'Podaj co najmniej adres e-mail lub numer telefonu.',
@@ -1087,6 +1288,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: 'Všechny návštěvníky Maalum žádáme, aby zařízení používali s respektem a v souladu s jejich účelem. Jakékoli zjištěné závady a nehody prosím neprodleně hlaste.',
                 booking_reference: 'Název rezervace',
                 supervisor_name: 'Jméno supervizora',
+                supervisor_name_n: 'Jméno supervizora {n}',
+                add_supervisor: 'Přidat supervizora',
+                person_name_n: 'Jméno osoby {n}',
+                add_person: 'Přidat osobu',
                 email: 'E-mail',
                 telephone: 'Telefon',
                 contact_error: 'Uveďte prosím alespoň e-mail nebo telefonní číslo.',
@@ -1136,6 +1341,10 @@ $csrf = $_SESSION['csrf_token'];
                 respect: '请所有来访者尊重并按用途使用设施。请立即报告任何发现的缺陷和事故。',
                 booking_reference: '预订姓名',
                 supervisor_name: '监督员姓名',
+                supervisor_name_n: '第 {n} 位监督员姓名',
+                add_supervisor: '添加监督员',
+                person_name_n: '第 {n} 位人员姓名',
+                add_person: '添加人员',
                 email: '电子邮件',
                 telephone: '电话',
                 contact_error: '请至少提供电子邮件或电话号码。',
@@ -1192,6 +1401,14 @@ $csrf = $_SESSION['csrf_token'];
             // Close the dropdown after selection
             langDropdown.classList.remove('active');
             currentLang = lang;
+            // Also update dynamic supervisor labels numbering and language
+            if (typeof updateSupervisorLabelsLanguage === 'function') {
+                updateSupervisorLabelsLanguage();
+            }
+            // Also update dynamic person labels numbering and language
+            if (typeof updatePersonLabelsLanguage === 'function') {
+                updatePersonLabelsLanguage();
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
