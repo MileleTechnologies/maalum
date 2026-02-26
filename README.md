@@ -65,28 +65,33 @@ Seamless language switching via floating FAB button:
    ```bash
    git clone https://github.com/MileleTechnologies/maalum.git
    cd maalum
-Install Dependencies
+
+2.Install Dependencies
 
 bash
 composer install
-Configure Environment
+
+3.Configure Environment
 
 bash
 cp .env.example .env
-Update .env with Your Settings
 
-env
+4.Update .env with Your Settings
+
+bash
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 RECIPIENT_EMAIL=info@maalumzanzibar.com
-Deploy to Web Server
+
+5.Deploy to Web Server
 
 Upload files to your web hosting
 Ensure proper file permissions
 Access via https://yourdomain.com
 📁 Project Structure
+
 Code
 maalum/
 ├── index.php                 # Main form interface
@@ -103,6 +108,7 @@ maalum/
 ├── .htaccess               # Apache rewrite rules
 ├── web.config              # IIS configuration
 └── README.md               # This file
+
 🔧 Configuration
 Email Setup (Gmail Example)
 Enable 2-Step Verification on Gmail
@@ -110,17 +116,21 @@ Generate an App Password at https://myaccount.google.com/apppasswords
 Use the app password in .env:
 Code
 SMTP_PASSWORD=your-16-char-app-password
+
 Customize Recipient Email
 Edit send.php:
 
 PHP
 $mail->addAddress('your-email@domain.com'); // Change recipient
+
+
 🎨 Customization
 Terms & Conditions
 Edit the 11 rules in index.php (lines with data-translate="rule{n}"):
 
 PHP
 <li data-translate="rule1">Your custom rule here</li>
+
 Styling
 Modify assets/styles.css for custom colors, fonts, and layout.
 
@@ -135,6 +145,8 @@ File Upload Validation - Type and size restrictions for signatures
 Date Validation - Prevents past booking dates
 SQL Injection Prevention - Uses parameterized queries (when applicable)
 XSS Protection - HTML entity encoding of user inputs
+
+
 📊 Form Fields
 Field	Type	Required	Validation
 Booking Name	Text	Yes	Non-empty
@@ -148,6 +160,8 @@ Child Ages	Number	Conditional	0-17 each
 Adults	Array	No	Name, age (12-120), email, phone
 Signature	Mixed	Yes	Draw/Type/Upload option
 Terms Agreement	Checkbox	Yes	Must check
+
+
 📧 Email Output
 The system sends an email containing:
 
@@ -155,10 +169,12 @@ All submitted booking information
 Children details and adult information
 Submission timestamp
 Attached PDF waiver document
+
 📱 Responsive Breakpoints
 Mobile (≤480px) - Single column, stacked layout
 Tablet (481px-768px) - Two-column where possible
 Desktop (≥769px) - Full responsive grid
+
 🐛 Troubleshooting
 Email Not Sending
 Check SMTP credentials in .env
@@ -177,20 +193,21 @@ Images Not Displaying
 Ensure MAALUM.png is in the root directory
 Check file permissions (should be 644)
 Verify correct file path in HTML
+
 🌐 Browser Support
 Chrome 90+
 Firefox 88+
 Safari 14+
 Edge 90+
 Mobile browsers (iOS Safari, Chrome Mobile)
-📝 License
-[Add your license information here]
 
 👥 Support
 For issues or questions, contact:
 
 Email: support@mileletechnologies.com
+email: flavianmichael663@gmail.com
 Website: https://www.mileletechnologies.com
+
 🔄 Version History
 v1.0.0 (Current)
 Initial release
@@ -199,11 +216,13 @@ Digital signature capture (3 modes)
 PDF generation & email delivery
 CSRF protection
 Mobile-responsive design
+
 📚 Dependencies
 Materialize CSS - Frontend framework
 PHPMailer - Email sending
 DOMPDF - PDF generation
 Signature Pad - Canvas signature
+
 🚢 Deployment
 Apache (.htaccess included)
 Code
@@ -211,38 +230,8 @@ Code
     RewriteEngine On
     # Your rewrite rules
 </IfModule>
-IIS (web.config included)
-Configuration for URL rewriting on Windows servers.
 
-Docker (Optional)
-Dockerfile
-FROM php:8.1-apache
-RUN docker-php-ext-install pdo pdo_mysql
-COPY . /var/www/html
-✨ Best Practices
-Always use HTTPS in production
-Regularly backup the server and database
-Monitor email delivery for failures
-Update dependencies periodically
-Test thoroughly on multiple devices
-Keep .env secure and never commit to version control
-Enable error logging for debugging
+
 Developed by: Milele Technologies
 Last Updated: February 26, 2026
 Repository: https://github.com/MileleTechnologies/maalum
-
-Code
-
----
-
-This README provides:
-- ✅ Clear project overview and features
-- ✅ Quick start guide with prerequisites
-- ✅ Project structure visualization
-- ✅ Configuration instructions with examples
-- ✅ Security features documentation
-- ✅ Troubleshooting guide
-- ✅ Browser compatibility info
-- ✅ Deployment guidelines
-- ✅ Complete field documentation
-- ✅ Version history and support information
